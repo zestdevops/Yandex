@@ -1,0 +1,77 @@
+# tasks file for backend
+#- name: Deploy Java Application
+#  hosts: backend
+#  gather_facts: no
+#  tasks: 323232
+    - name: Create backend user
+      become: yes
+      ansible.builtin.user:
+        name: backend
+        shell: /bin/bash
+        system: yes
+
+    - name: Create directory for the application
+      become: yes
+      ansible.builtin.file:
+        path: "{{ backend_lib_directory }}"
+        owner: backend
+        group: backend
+        state: directory
+        mode: 0755
+      tags:
+        - create_directory
+   
+    - name: Download from nexus repo
+      become: yes
+      ansible.builtin.uri:
+        url: "{{ nexus_url_backend }}"
+        dest: "{{ backend_lib_directory }}"
+        owner: "backend"
+        group: "backend"
+        mode: 0755
+        force_basic_auth: yes
+        user: "{{ nexus_user }}"
+        password: "{{ nexus_password }}"
+      tags:
+        - download
+
+    - name: Run the equivalent of "apt-get update" as a separate step
+      become: yes
+      ansible.builtin.apt:
+        update_cache: yes  
+    
+    - name: Install java
+      become: yes
+      apt:
+         name: openjdk-16-jdk
+         state: present
+      tags:
+        - java
+
+    - name: Backend move systemd unit
+      become: yes
+      ansible.builtin.template:
+         src: backend.service.j2
+         dest: /etc/systemd/system/backend.service
+         owner: root
+         group: root
+         mode: 0644
+      tags:
+        - systemd
+
+    - name: Reload systemd daemon
+      become: yes
+      ansible.builtin.systemd:
+        daemon_reload: yes
+      tags:
+        - systemd
+
+    - name: Start the application
+      become: yes
+      ansible.builtin.systemd:
+        name: backend.service
+        state: started
+        enabled: yes
+      tags:
+        - systemd
+

@@ -1,0 +1,20 @@
+server {
+        listen 80;
+        listen [::]:80;
+
+        server_name sausage-store.ru;
+
+        root /opt/sausage-store/static/frontend;
+        index index.html;
+
+        location / {
+                #proxy_pass http://localhost:8080;
+                try_files $uri $uri/ =404;
+
+#try_files \$uri \$uri/ /index.html;
+                #include proxy_params;
+        }
+        location /api {
+                proxy_pass http://localhost:8080;
+        }
+}

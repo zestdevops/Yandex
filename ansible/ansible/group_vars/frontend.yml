@@ -1,0 +1,4 @@
+frontend_lib_directory: "/opt/sausage-store/static/"
+frontend_version: "1.0.1227019"
+nexus_url_frontend: "https://nexus.praktikum-services.tech/repository/std-028-30-frontend1/{{ frontend_version }}/sausage-store-{{ frontend_version }}.tar.gz"
+frontend_unpack: "{{ frontend_lib_directory }}sausage-store-{{ frontend_version }}.tar.gz"

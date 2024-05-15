@@ -1,0 +1,9 @@
+- name: Deploy Backend service 
+  hosts: backend
+  roles:
+    - backend
+
+- name: Deploy Frontend Serice
+  hosts: frontend
+  roles:
+    - frontend

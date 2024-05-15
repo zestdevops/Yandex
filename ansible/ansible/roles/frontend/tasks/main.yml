@@ -1,0 +1,130 @@
+---
+# tasks file for frontend
+    - name: Create frontend user
+      become: yes
+      ansible.builtin.user:
+        name: www-data
+        shell: /bin/bash
+        system: yes
+
+    - name: Create directory for the application
+      become: yes
+      ansible.builtin.file:
+        path: "{{ frontend_lib_directory }}"
+        owner: www-data
+        group: www-data
+        state: directory
+        mode: 0755
+      tags:
+        - create_directory
+
+    - name: Download from nexus repo
+      become: yes
+      ansible.builtin.uri:
+        url: "{{ nexus_url_frontend }}"
+        dest: "{{ frontend_lib_directory }}"
+        owner: "www-data"
+        group: "www-data"
+        mode: 0755
+        force_basic_auth: yes
+        user: "{{ nexus_user }}"
+        password: "{{ nexus_password }}"
+      tags:
+        - download
+
+    - name: Unarchive a file that is already on the remote machine
+      become: yes
+      ansible.builtin.unarchive:
+        src: "{{ frontend_unpack }}"
+        dest: "{{ frontend_lib_directory }}"
+        owner: "www-data"
+        group: "root"
+        mode: 0755
+        remote_src: yes
+
+    - name: Apt update
+      become: yes
+      ansible.builtin.apt:
+        update_cache: yes
+      tags:
+        - apt update
+
+    - name: Install npm
+      become: yes
+      apt:
+         name: npm
+         state: present
+      tags:
+        - npm
+
+    - name: Install nodejs
+      become: yes
+      apt:
+         name: nodejs
+         state: present
+      tags:
+        - nodejs
+
+    - name: Create directory /var/www-data/
+      become: yes
+      ansible.builtin.file:
+        path: "/var/www-data/"
+        owner: www-data
+        group: www-data
+        state: directory
+        mode: 0755
+      tags:
+        - create_directory
+
+    - name: Install nginx
+      become: yes
+      apt:
+         name: nginx
+         state: present
+      tags:
+        - nginx
+  
+    - name: Frontend move site config
+      become: yes
+      ansible.builtin.template:
+         src: default.j2
+         dest: /etc/nginx/sites-available/default
+         owner: root
+         group: root
+         mode: 0644
+      tags:
+        - site_config
+
+    - name: Frontend move systemd unit
+      become: yes
+      ansible.builtin.template:
+         src: frontend.service.j2
+         dest: /etc/systemd/system/frontend.service
+         owner: root
+         group: root
+         mode: 0644
+      tags:
+        - systemd
+
+    - name: Reload systemd daemon
+      become: yes
+      ansible.builtin.systemd:
+        daemon_reload: yes
+      tags:
+        - systemd
+
+    - name: Stop nginx
+      become: yes
+      ansible.builtin.systemd:
+        name: nginx.service
+        state: stopped
+        enabled: no
+
+    - name: Start the application
+      become: yes
+      ansible.builtin.systemd:
+        name: frontend.service
+        state: started
+        enabled: yes
+      tags:
+        - systemd
